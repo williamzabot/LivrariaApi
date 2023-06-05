@@ -1,19 +1,21 @@
+const tokenConfig = require("../authentication/TokenConfig");
+const registerController = require("../controllers/RegisterController");
 
-const tokenConfig = require('../authentication/TokenConfig')
-
+/** Only admins can login  */
 function login(req, res) {
-  const body = { ...req.body };
-  console.log(body)
-  const email = body.email;
-  const password = body.password;
-  if (email == "emailCorreto@mail.com" && password == "123") {
-    const token = tokenConfig.generateToken({
-        "email": email,
-        "password": password
-    });
-    res.status(200).json({ token: token });
-  } else {
-    res.status(401).json({ "message": "email ou senha inválidos" });
+  const email = req.body.email;
+  const password = req.body.password;
+  const admins = registerController.getAdmins();
+  let userExists = false;
+  admins.forEach((admin) => {
+    if (admin.email == email && admin.password == password) {
+      userExists = true;
+      const token = tokenConfig.generateToken(admin);
+      res.status(200).json({ token: token });
+    }
+  });
+  if (!userExists) {
+    res.status(400).json({ message: "Email ou senha inválidos" });
   }
 }
 

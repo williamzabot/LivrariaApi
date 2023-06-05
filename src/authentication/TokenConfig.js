@@ -12,7 +12,7 @@ function verifyToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, "chave-secreta-do-token");
-    //req.usuario = decoded;
+    req.user = decoded;
     next();
   } catch (error) {
     return res.status(401).json({ mensagem: "Token inválido" });
