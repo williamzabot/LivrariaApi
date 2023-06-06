@@ -1,12 +1,14 @@
 const registerController = require("../controllers/RegisterController");
 
 let registerCount = 0;
+let isbn = 0;
 const books = [];
 
 function registerBook(req, res) {
   const book = req.body;
-  if (book && book.isbn && book.title && book.price && book.authors) {
+  if (book && book.title && book.price && book.authors) {
     book.available = true;
+    book.isbn = isbn += 1;
     if (!book.publisher) {
       book.publisher = "";
     }
