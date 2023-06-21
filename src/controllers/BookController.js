@@ -63,7 +63,7 @@ function locate(req, res) {
         const leasedBooks = user.leasedBooks;
         const id = (registerCount += 1);
         bookLocate.available = false;
-        if (leasedBooks < 3) {
+        if (leasedBooks.length < 3) {
           const registration = {
             registrationId: id,
             date: date,
