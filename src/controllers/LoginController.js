@@ -9,8 +9,8 @@ function login(req, res) {
     (token) => {
       res.status(200).json({ token: token });
     },
-    () => {
-      res.status(400).json({ message: "Email ou senha inválidos" });
+    (error) => {
+      res.status(error.code).json(error);
     },
   )
 }

@@ -6,8 +6,8 @@ function registerBook(req, res) {
     () => {
       res.status(201).json(book);
     },
-    () => {
-      res.status(400).json({ message: "Faltam informações sobre o livro" });
+    (error) => {
+      res.status(error.code).json(error);
     })
 }
 
@@ -24,8 +24,9 @@ function getBook(req, res) {
   bookRepository.getBook(isbn,
     (book) => {
       res.json(book);
-    }, () => {
-      res.status(400).json({ message: "Livro não encontrado" });
+    },
+    (error) => {
+      res.status(error.code).json(error);
     })
 }
 
@@ -38,15 +39,9 @@ function locate(req, res) {
     (registration) => {
       res.status(201).json(registration);
     },
-    () => {
-      res.status(404).json({ message: "Livro não encontrado" });
-    },
-    () => {
-      res.status(404).json({ message: "Cliente não encontrado" });
-    },
-    () => {
-      res.status(400).json({ message: "Faltam informações sobre a locação" });
-    },
+    (error) => {
+      res.status(error.code).json(error);
+    }
   )
 }
 
@@ -59,14 +54,10 @@ function returnBookToLibrary(req, res) {
     () => {
       res.json({ message: "Livro devolvido com sucesso! " });
     },
-    () => {
-      res.status(400).json({ message: "Livro não encontrado" });
-    },
-    () => {
-      res.status(400).json({ message: "Informações inválidas" });
+    (error) => {
+      res.status(error.code).json(error);
     }
   )
 }
-
 
 module.exports = { registerBook, getBooks, getBook, locate, returnBookToLibrary };

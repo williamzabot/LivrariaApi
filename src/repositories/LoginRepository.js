@@ -12,7 +12,7 @@ function login(email, password, onSuccess, onFailure) {
         }
     });
     if (!userExists) {
-        onFailure()
+        onFailure({ code: 400, message: "Email ou senha inválidos" })
     }
 }
 

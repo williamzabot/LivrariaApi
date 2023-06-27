@@ -3,7 +3,7 @@ const customers = [];
 let countAdmin = 0;
 let countCustomer = 0;
 
-function register(user, onSuccess, invalidType, onFailure) {
+function register(user, onSuccess, onFailure) {
     if (user && user.email && user.type) {
         if (user.type == "admin" && user.password) {
             user.id = countAdmin += 1;
@@ -14,11 +14,11 @@ function register(user, onSuccess, invalidType, onFailure) {
             user.customerId = countCustomer += 1;
             customers.push(user);
         } else {
-            invalidType()
+            onFailure({ code: 400, message: "Tipos válidos são: admin ou customer" })
         }
         onSuccess(user)
     } else {
-        onFailure()
+        onFailure({ code: 400, message: "Informações inválidas" })
     }
 }
 
@@ -31,7 +31,7 @@ function getCustomer(id, onSuccess, onFailure) {
         }
     });
     if (!customerExists) {
-        onFailure()
+        onFailure({ code: 404, message: "Usuário não encontrado" })
     }
 }
 

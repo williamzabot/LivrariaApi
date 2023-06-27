@@ -14,7 +14,7 @@ function registerBook(book, onSuccess, onFailure) {
         books.push(book);
         onSuccess()
     } else {
-        onFailure()
+        onFailure({ code: 400, message: "Faltam informações sobre o livro" })
     }
 }
 
@@ -31,11 +31,11 @@ function getBook(isbn, onSuccess, onFailure) {
         }
     });
     if (!bookExists) {
-        onFailure()
+        onFailure({ code: 404, message: "Livro não encontrado" })
     }
 }
 
-function locate(isbn, userId, onSuccess, customerNotFound, bookNotFound, locateFailure) {
+function locate(isbn, userId, onSuccess, onFailure) {
     let user = {};
     let userExists = false;
     if (userId && isbn) {
@@ -70,17 +70,17 @@ function locate(isbn, userId, onSuccess, customerNotFound, bookNotFound, locateF
                     onSuccess(registration)
                 }
             } else {
-                bookNotFound()
+                onFailure({ code: 404, message: "Livro não encontrado" })
             }
         } else {
-            customerNotFound()
+            onFailure({ code: 404, message: "Cliente não encontrado" })
         }
     } else {
-        locateFailure()
+        onFailure({ code: 400, message: "Faltam informações sobre a locação" })
     }
 }
 
-function returnBookToLibrary(isbn, userId, onSuccess, bookNotFound, onFailure) {
+function returnBookToLibrary(isbn, userId, onSuccess, onFailure) {
     let bookExists = false;
     if (userId && isbn) {
         registerRepository.getCustomers().forEach((customer) => {
@@ -98,10 +98,10 @@ function returnBookToLibrary(isbn, userId, onSuccess, bookNotFound, onFailure) {
             }
         });
         if (!bookExists) {
-            bookNotFound()
+            onFailure({ code: 404, message: "Livro não encontrado" })
         }
     } else {
-        onFailure()
+        onFailure({ code: 400, message: "Informações inválidas" })
     }
 }
 

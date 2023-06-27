@@ -6,11 +6,8 @@ function register(req, res) {
     (user) => {
       res.status(201).json(user);
     },
-    () => {
-      res.status(400).json({ message: "Tipos válidos são: admin ou customer" });
-    },
-    () => {
-      res.status(400).json({ message: "Informações inválidas" });
+    (error) => {
+      res.status(error.code).json(error);
     }
   )
 }
@@ -21,8 +18,8 @@ function getCustomer(req, res) {
     (customer) => {
       res.json(customer);
     },
-    () => {
-      res.status(400).json({ message: "Usuário não encontrado" });
+    (error) => {
+      res.status(error.code).json(error);
     },
   )
 }
