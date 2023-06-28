@@ -1,4 +1,5 @@
 const registerRepository = require("../repositories/RegisterRepository")
+const databaseClient = require("../database/DatabaseClient")
 
 const books = [];
 let isbnCount = 0;
