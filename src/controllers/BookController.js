@@ -3,7 +3,7 @@ const bookRepository = require("../repositories/BookRepository")
 function registerBook(req, res) {
   const book = req.body;
   bookRepository.registerBook(book,
-    () => {
+    (book) => {
       res.status(201).json(book);
     },
     (error) => {

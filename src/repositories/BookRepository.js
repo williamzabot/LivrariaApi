@@ -1,42 +1,61 @@
 const registerRepository = require("../repositories/RegisterRepository")
-const databaseClient = require("../database/DatabaseClient")
+const database = require("../database/DatabaseClient");
+const { Client } = require("pg");
 
-const books = [];
 let isbnCount = 0;
 let registerCount = 0;
+const connection = database.connection
 
-function registerBook(book, onSuccess, onFailure) {
+
+async function registerBook(book, onSuccess, onFailure) {
     if (book && book.title && book.price && book.authors) {
         book.available = true;
         book.isbn = isbnCount += 1;
         if (!book.publisher) {
             book.publisher = "";
         }
-        books.push(book);
-        onSuccess()
+        const client = new Client(connection)
+        await client.connect()
+        const values = [book.isbn, book.title, book.price, true]
+        const response = await client.query("INSERT INTO books (isbn, titulo, preco, available) VALUES ($1, $2, $3, $4) RETURNING *", values)
+        const bookAdded = response.rows[0]
+        if (bookAdded != undefined) {
+            onSuccess(bookAdded)
+        }
+        await client.end()
     } else {
-        onFailure({ code: 400, message: "Faltam informações sobre o livro" })
+        onFailure({ code: 422, message: "Faltam informações sobre o livro" })
     }
 }
 
-function getBooks(showBooks) {
+async function getBooks(showBooks) {
+    const client = new Client(connection)
+    await client.connect()
+    const response = await client.query("SELECT * from books")
+    const books = response.rows
+    if (books != undefined) {
+        await client.end()
+    }
     showBooks(books)
 }
 
-function getBook(isbn, onSuccess, onFailure) {
+async function getBook(isbn, onSuccess, onFailure) {
     let bookExists = false;
-    books.forEach((book) => {
-        if (book.isbn == isbn) {
-            bookExists = true;
-            onSuccess(book)
-        }
-    });
+    const client = new Client(connection)
+    await client.connect()
+    const response = await client.query("SELECT * FROM books WHERE isbn=$1", [isbn])
+    const book = response.rows[0]
+    if (book != undefined) {
+        bookExists = true;
+        onSuccess(book)
+    }
+    await client.end()
     if (!bookExists) {
         onFailure({ code: 404, message: "Livro não encontrado" })
     }
 }
 
-function locate(isbn, userId, onSuccess, onFailure) {
+async function locate(isbn, userId, onSuccess, onFailure) {
     let user = {};
     let userExists = false;
     if (userId && isbn) {
@@ -47,32 +66,35 @@ function locate(isbn, userId, onSuccess, onFailure) {
             }
         });
         if (userExists) {
-            let bookLocate = {};
             let bookExists = false;
-            books.forEach((book) => {
-                if (book.isbn == isbn) {
-                    bookExists = true;
-                    bookLocate = book;
-                }
-            });
+            const client = new Client(connection)
+            await client.connect()
+            const selectBookByIsbn = await client.query("SELECT * FROM books WHERE isbn=$1", [isbn])
+            const bookLocate = selectBookByIsbn.rows[0]
+            bookExists = bookLocate != undefined
             if (bookExists) {
-                const date = getDate();
                 const leasedBooks = user.leasedBooks;
                 const id = (registerCount += 1);
                 bookLocate.available = false;
                 if (leasedBooks.length < 3) {
-                    const registration = {
-                        registrationId: id,
-                        date: date,
-                        book: bookLocate,
-                        customer: user,
-                    };
-                    leasedBooks.push(bookLocate);
-                    onSuccess(registration)
+                    const values = [id, bookLocate.isbn, user.email]
+                    const insertRegistration = await client.query(
+                        "INSERT INTO registrations (id, isbn, cliente) VALUES ($1, $2, $3) RETURNING *",
+                        values
+                    )
+                    const registration = insertRegistration.rows[0]
+                    if (registration != undefined) {
+                        await client.query(
+                            "UPDATE books SET available = false WHERE isbn = $1;",
+                            [isbn]
+                        )
+                        onSuccess(registration)
+                    }
                 }
             } else {
                 onFailure({ code: 404, message: "Livro não encontrado" })
             }
+            await client.end()
         } else {
             onFailure({ code: 404, message: "Cliente não encontrado" })
         }
