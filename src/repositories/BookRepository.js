@@ -3,7 +3,6 @@ const database = require("../database/DatabaseClient");
 const { Client } = require("pg");
 
 let isbnCount = 0;
-let registerCount = 0;
 const connection = database.connection
 
 
@@ -16,8 +15,8 @@ async function registerBook(book, onSuccess, onFailure) {
         }
         const client = new Client(connection)
         await client.connect()
-        const values = [book.isbn, book.title, book.price, true]
-        const response = await client.query("INSERT INTO books (isbn, titulo, preco, available) VALUES ($1, $2, $3, $4) RETURNING *", values)
+        const values = [book.title, book.price, true]
+        const response = await client.query("INSERT INTO books (titulo, preco, available) VALUES ($1, $2, $3) RETURNING *", values)
         const bookAdded = response.rows[0]
         if (bookAdded != undefined) {
             onSuccess(bookAdded)
@@ -73,23 +72,19 @@ async function locate(isbn, userId, onSuccess, onFailure) {
             const bookLocate = selectBookByIsbn.rows[0]
             bookExists = bookLocate != undefined
             if (bookExists) {
-                const leasedBooks = user.leasedBooks;
-                const id = (registerCount += 1);
                 bookLocate.available = false;
-                if (leasedBooks.length < 3) {
-                    const values = [id, bookLocate.isbn, user.email]
-                    const insertRegistration = await client.query(
-                        "INSERT INTO registrations (id, isbn, cliente) VALUES ($1, $2, $3) RETURNING *",
-                        values
+                const values = [bookLocate.isbn, user.id]
+                const insertRegistration = await client.query(
+                    "INSERT INTO locations (isbn, cliente) VALUES ($1, $2) RETURNING *",
+                    values
+                )
+                const registration = insertRegistration.rows[0]
+                if (registration != undefined) {
+                    await client.query(
+                        "UPDATE books SET available = false WHERE isbn = $1;",
+                        [isbn]
                     )
-                    const registration = insertRegistration.rows[0]
-                    if (registration != undefined) {
-                        await client.query(
-                            "UPDATE books SET available = false WHERE isbn = $1;",
-                            [isbn]
-                        )
-                        onSuccess(registration)
-                    }
+                    onSuccess(registration)
                 }
             } else {
                 onFailure({ code: 404, message: "Livro não encontrado" })
@@ -103,26 +98,29 @@ async function locate(isbn, userId, onSuccess, onFailure) {
     }
 }
 
-function returnBookToLibrary(isbn, userId, onSuccess, onFailure) {
-    let bookExists = false;
+async function returnBookToLibrary(isbn, userId, onSuccess, onFailure) {
+    let locationExists = false;
     if (userId && isbn) {
-        registerRepository.getCustomers().forEach((customer) => {
-            if (customer.customerId == userId) {
-                const leasedBooks = customer.leasedBooks;
-                for (let i = 0; i < leasedBooks.length; i++) {
-                    const leasedBook = leasedBooks[i];
-                    if (leasedBook.isbn == isbn) {
-                        bookExists = true;
-                        leasedBooks.splice(i, 1);
-                        leasedBook.available = true;
-                        onSuccess()
-                    }
-                }
-            }
-        });
-        if (!bookExists) {
-            onFailure({ code: 404, message: "Livro não encontrado" })
+        const client = new Client(connection)
+        await client.connect()
+        const selectLocation = await client.query(
+            "SELECT * FROM locations WHERE isbn=$1 AND cliente=$2", [isbn, userId]
+        )
+        const location = selectLocation.rows[0]
+        locationExists = location != undefined
+        if (locationExists) {
+            const id = location.id
+            await client.query(
+                "DELETE FROM locations WHERE id=$1", [id]
+            )
+            await client.query(
+                "UPDATE books SET available = false WHERE isbn = $1;", [isbn]
+            )
+            onSuccess()
+        } else {
+            onFailure({ code: 404, message: "Locação não encontrada" })
         }
+        await client.end()
     } else {
         onFailure({ code: 400, message: "Informações inválidas" })
     }
