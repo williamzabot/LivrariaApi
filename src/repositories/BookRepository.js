@@ -114,7 +114,7 @@ async function returnBookToLibrary(isbn, userId, onSuccess, onFailure) {
                 "DELETE FROM locations WHERE id=$1", [id]
             )
             await client.query(
-                "UPDATE books SET available = false WHERE isbn = $1;", [isbn]
+                "UPDATE books SET available = true WHERE isbn = $1;", [isbn]
             )
             onSuccess()
         } else {
