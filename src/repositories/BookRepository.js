@@ -73,7 +73,7 @@ async function locate(isbn, userId, onSuccess, onFailure) {
             bookExists = bookLocate != undefined
             if (bookExists) {
                 bookLocate.available = false;
-                const values = [bookLocate.isbn, user.id]
+                const values = [bookLocate.isbn, user.customerId]
                 const insertRegistration = await client.query(
                     "INSERT INTO locations (isbn, cliente) VALUES ($1, $2) RETURNING *",
                     values
